@@ -4,15 +4,16 @@ namespace Asaas\Support;
 
 class Config
 {
-    protected array $config;
+    private array $config;
 
     public function __construct(array $override = [])
     {
-        $default = require __DIR__ . '../config/asaas.php';
-
-        $this->config = array_merge_recursive($default, $override);
+        $this->config = $this->mergeConfig($override);
     }
 
+    /**
+     * Get a configuration value using dot notation.
+     */
     public function get(string $key, mixed $default = null): mixed
     {
         $segments = explode('.', $key);
@@ -29,10 +30,26 @@ class Config
         return $value;
     }
 
+    /**
+     * Retrieve the base URL for the configured environment.
+     */
     public function getBaseUrl(): string
     {
         $env = $this->get('environment', 'production');
 
         return $this->get("base_urls.$env");
+    }
+
+    /**
+     * Load default configuration and merge overrides.
+     *
+     * @param array<string, mixed> $override
+     * @return array<string, mixed>
+     */
+    private function mergeConfig(array $override): array
+    {
+        $default = require __DIR__ . '/../config/asaas.php';
+
+        return array_replace_recursive($default, $override);
     }
 }
