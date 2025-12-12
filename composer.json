@@ -1,0 +1,39 @@
+{
+    "name": "rcsil/asaas-php-sdk",
+    "description": "SDK não oficial em PHP para integração com a API Asaas.",
+    "keywords": [
+        "asaas",
+        "sdk",
+        "php",
+        "payments",
+        "api",
+        "billing"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Raphael Silva"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "guzzlehttp/guzzle": "^7.0",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Asaas\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Asaas\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
