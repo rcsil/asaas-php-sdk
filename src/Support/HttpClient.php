@@ -66,6 +66,23 @@ final class HttpClient
     }
 
     /**
+     * Execute a POST request with Multipart payload.
+     *
+     * @param string $uri
+     * @param array<int, array<string, mixed>> $multipart
+     * @param array<string, string> $headers
+     * @return array<string, mixed>
+     */
+    public function postMultipart(
+        string $uri,
+        array $multipart,
+        array $headers = []
+    ): array
+    {
+        return $this->request('POST', $uri, [], null, $headers, $multipart);
+    }
+
+    /**
      * Execute a PUT request with JSON payload and optional headers.
      *
      * @param array<string, mixed> $payload
@@ -103,13 +120,15 @@ final class HttpClient
      * @param array<string, mixed> $query
      * @param array<string, mixed>|null $payload
      * @param array<string, string> $headers
+     * @param array<int, array<string, mixed>>|null $multipart
      */
     private function request(
         string $method, 
         string $uri, 
         array $query    = [], 
         ?array $payload = null, 
-        array $headers  = []
+        array $headers  = [],
+        ?array $multipart = null
     ): array
     {
         $uri = trim($uri);
@@ -118,7 +137,7 @@ final class HttpClient
             throw new \InvalidArgumentException('Request URI cannot be empty.');
         }
 
-        $options = $this->buildOptions($query, $payload, $headers);
+        $options = $this->buildOptions($query, $payload, $headers, $multipart);
 
         try {
             $response = $this->client->request($method, $uri, $options);
@@ -197,12 +216,21 @@ final class HttpClient
      * @param array<string, mixed> $query
      * @param array<string, mixed>|null $payload
      * @param array<string, string> $headers
+     * @param array<int, array<string, mixed>>|null $multipart
      * @return array<string, mixed>
      */
-    private function buildOptions(array $query, ?array $payload, array $headers): array
+    private function buildOptions(array $query, ?array $payload, array $headers, ?array $multipart = null): array
     {
+        $mergedHeaders = array_merge($this->defaultHeaders, $headers);
+
+        // If multipart is used, we should likely let Guzzle handle the Content-Type boundary,
+        // so we remove 'Content-Type' if it was set to 'application/json' by default.
+        if ($multipart !== null) {
+            unset($mergedHeaders['Content-Type']);
+        }
+
         $options = [
-            RequestOptions::HEADERS => array_merge($this->defaultHeaders, $headers),
+            RequestOptions::HEADERS => $mergedHeaders,
         ];
 
         if ($query !== []) {
@@ -211,6 +239,10 @@ final class HttpClient
 
         if ($payload !== null) {
             $options[RequestOptions::JSON] = $payload;
+        }
+
+        if ($multipart !== null) {
+            $options[RequestOptions::MULTIPART] = $multipart;
         }
 
         return $options;

@@ -13,7 +13,7 @@ class ClientsService
 
     public function __construct(HttpClient $http, Config $config)
     {
-        $this->http   = $http;
+        $this->http = $http;
         $this->config = $config;
         $this->customerBasePath = sprintf('/%s/customers', $this->config->get('api_version'));
     }

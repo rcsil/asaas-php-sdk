@@ -4,14 +4,18 @@ namespace Asaas;
 
 use Asaas\Services\ClientsService;
 use Asaas\Services\PaymentsService;
+use Asaas\Services\SubaccountService;
 use Asaas\Support\Config;
 use Asaas\Support\HttpClient;
 
 class AsaasClient
 {
+    public const VERSION = '0.2.0';
+
     private string $apiKey;
     private Config $config;
     private HttpClient $http;
+    private ?SubaccountService $subaccountService = null;
     private ?PaymentsService $paymentsService = null;
     private ?ClientsService $clientsService   = null;
 
@@ -22,7 +26,16 @@ class AsaasClient
     {
         $this->apiKey = $this->sanitizeApiKey($apiKey);
         $this->config = new Config($config);
-        $this->http   = new HttpClient($this->apiKey, $this->config);
+        $this->http = new HttpClient($this->apiKey, $this->config);
+    }
+
+    public function subaccountService(): SubaccountService
+    {
+        if ($this->subaccountService === null) {
+            $this->subaccountService = new SubaccountService($this->http, $this->config);
+        }
+
+        return $this->subaccountService;
     }
 
     /**
