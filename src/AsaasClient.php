@@ -10,7 +10,7 @@ use Asaas\Support\HttpClient;
 
 class AsaasClient
 {
-    public const VERSION = '0.2.0';
+    public const VERSION = '0.2.1';
 
     private string $apiKey;
     private Config $config;
@@ -29,7 +29,7 @@ class AsaasClient
         $this->http = new HttpClient($this->apiKey, $this->config);
     }
 
-    public function subaccountService(): SubaccountService
+    public function subaccounts(): SubaccountService
     {
         if ($this->subaccountService === null) {
             $this->subaccountService = new SubaccountService($this->http, $this->config);
