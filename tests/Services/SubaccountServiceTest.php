@@ -200,14 +200,14 @@ class SubaccountServiceTest extends TestCase
     public function testUploadDocument()
     {
         $guzzleClient = $this->createMock(ClientInterface::class);
-        $guzzleClient->expects($this->once())
+        $guzzleClient->expects($this->exactly(2))
              ->method('request')
              ->with(
                  'POST',
                  '/v3/myAccount/documents/doc_id',
                  $this->callback(function ($options) {
                      return isset($options['multipart']) 
-                        && $options['multipart'][0]['name'] === 'file'
+                        && $options['multipart'][0]['name'] === 'documentFile'
                         && isset($options['headers']['access_token'])
                         && $options['headers']['access_token'] === 'sub_token';
                  })
@@ -216,16 +216,23 @@ class SubaccountServiceTest extends TestCase
 
         $http = $this->createHttpClient($guzzleClient);
         $config = $this->createConfigMock();
-        
+        $service = new SubaccountService($http, $config);
+
+        // Test with file path
         $tempFile = tempnam(sys_get_temp_dir(), 'test_doc');
         file_put_contents($tempFile, 'test content');
-
-        $service = new SubaccountService($http, $config);
-        $result = $service->uploadDocument('sub_token', 'doc_id', $tempFile);
-
+        $resultPath = $service->uploadDocument('sub_token', 'doc_id', $tempFile, 'IDENTIFICATION');
         unlink($tempFile);
 
-        $this->assertEquals(['id' => 'doc_id', 'status' => 'SENT'], $result);
+        // Test with resource
+        $resource = fopen('php://memory', 'r+');
+        fwrite($resource, 'test content resource');
+        rewind($resource);
+        $resultResource = $service->uploadDocument('sub_token', 'doc_id', $resource, 'IDENTIFICATION', 'file.pdf');
+        fclose($resource);
+
+        $this->assertEquals(['id' => 'doc_id', 'status' => 'SENT'], $resultPath);
+        $this->assertEquals(['id' => 'doc_id', 'status' => 'SENT'], $resultResource);
     }
 
     public function testGetDocument()
@@ -259,9 +266,10 @@ class SubaccountServiceTest extends TestCase
              ->method('request')
              ->with(
                  'POST',
-                 '/v3/myAccount/documents/files/file_id',
+                 '/v3/myAccount/documents/doc_id',
                  $this->callback(function ($options) {
                      return isset($options['multipart'])
+                        && $options['multipart'][0]['name'] === 'documentFile'
                         && isset($options['headers']['access_token'])
                         && $options['headers']['access_token'] === 'sub_token';
                  })
@@ -275,7 +283,7 @@ class SubaccountServiceTest extends TestCase
         file_put_contents($tempFile, 'updated content');
 
         $service = new SubaccountService($http, $config);
-        $result = $service->updateDocument('sub_token', 'file_id', $tempFile);
+        $result = $service->updateDocument('sub_token', 'doc_id', $tempFile);
         
         unlink($tempFile);
 

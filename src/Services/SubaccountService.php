@@ -148,22 +148,43 @@ class SubaccountService
      *
      * @param string $apiKey The subaccount's API key.
      * @param string $documentId The document group ID (from checkPendingDocuments).
-     * @param string $filePath The absolute path to the file to be uploaded.
+     * @param string|resource $file The absolute path to the file or a stream resource.
+     * @param string|null $type The document type.
+     * @param string|null $filename The filename (optional if $file is a path, recommended if $file is a resource).
      * @return array<string, mixed>
      */
-    public function uploadDocument(string $apiKey, string $documentId, string $filePath): array
+    public function uploadDocument(string $apiKey, string $documentId, $file, ?string $type = null, ?string $filename = null): array
     {
-        if (!file_exists($filePath)) {
-            throw new \InvalidArgumentException("File not found: {$filePath}");
+        if (is_string($file)) {
+            if (!file_exists($file)) {
+                throw new \InvalidArgumentException("File not found: {$file}");
+            }
+            $contents = fopen($file, 'r');
+            $filename = $filename ?? basename($file);
+        } elseif (is_resource($file)) {
+            $contents = $file;
+        } else {
+            throw new \InvalidArgumentException('File must be a string path or a stream resource.');
+        }
+
+        if (!$filename) {
+            throw new \InvalidArgumentException('Filename is required when passing a resource.');
         }
 
         $multipart = [
             [
-                'name'     => 'file',
-                'contents' => fopen($filePath, 'r'),
-                'filename' => basename($filePath),
+                'name'     => 'documentFile',
+                'contents' => $contents,
+                'filename' => $filename,
             ],
         ];
+
+        if ($type) {
+            $multipart[] = [
+                'name'     => 'type',
+                'contents' => $type,
+            ];
+        }
 
         $path = sprintf('/%s/myAccount/documents/%s', $this->config->get('api_version'), $documentId);
 
@@ -187,27 +208,15 @@ class SubaccountService
      * Update a submitted document file.
      *
      * @param string $apiKey The subaccount's API key.
-     * @param string $fileId The uploaded file ID.
-     * @param string $filePath The absolute path to the new file.
+     * @param string $documentId The document ID.
+     * @param string|resource $file The absolute path to the new file or a stream resource.
+     * @param string|null $type The document type.
+     * @param string|null $filename The filename (optional if $file is a path, recommended if $file is a resource).
      * @return array<string, mixed>
      */
-    public function updateDocument(string $apiKey, string $fileId, string $filePath): array
+    public function updateDocument(string $apiKey, string $documentId, $file, ?string $type = null, ?string $filename = null): array
     {
-        if (!file_exists($filePath)) {
-            throw new \InvalidArgumentException("File not found: {$filePath}");
-        }
-
-        $multipart = [
-            [
-                'name'     => 'file',
-                'contents' => fopen($filePath, 'r'),
-                'filename' => basename($filePath),
-            ],
-        ];
-
-        $path = sprintf('/%s/myAccount/documents/files/%s', $this->config->get('api_version'), $fileId);
-
-        return $this->httpClient->postMultipart($path, $multipart, ['access_token' => $apiKey]);
+        return $this->uploadDocument($apiKey, $documentId, $file, $type, $filename);
     }
 
     /**

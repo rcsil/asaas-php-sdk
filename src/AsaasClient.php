@@ -10,7 +10,7 @@ use Asaas\Support\HttpClient;
 
 class AsaasClient
 {
-    public const VERSION = '0.2.1';
+    public const VERSION = '0.2.2';
 
     private string $apiKey;
     private Config $config;
